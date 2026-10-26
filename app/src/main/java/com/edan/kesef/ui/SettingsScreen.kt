@@ -6,7 +6,9 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
 import com.edan.kesef.data.EntryType
+import com.edan.kesef.data.ImportBatch
 import com.edan.kesef.importer.CsvImport
 import com.edan.kesef.util.Money
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +71,27 @@ fun SettingsScreen(vm: MainViewModel, padding: PaddingValues, onManageCategories
     var showLog by remember { mutableStateOf(false) }
 
     val importState by vm.importState.collectAsStateWithLifecycle()
+    val importBatches by vm.importBatches.collectAsStateWithLifecycle()
+    var batchToDelete by remember { mutableStateOf<ImportBatch?>(null) }
+
+    batchToDelete?.let { b ->
+        AlertDialog(
+            onDismissRequest = { batchToDelete = null },
+            title = { Text("למחוק ${b.count} תנועות?") },
+            text = {
+                Text(
+                    "כל מה שיובא מ\"${b.account.ifBlank { "ללא אמצעי תשלום" }}\" יימחק, וגם קטגוריות שהוספו ונשארו ריקות. " +
+                        "תנועות שהזנת ידנית או שנקלטו מ-Wallet לא נפגעות. אי אפשר לבטל.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.deleteImported(b.account); batchToDelete = null }) {
+                    Text("מחק", color = K.Expense)
+                }
+            },
+            dismissButton = { TextButton(onClick = { batchToDelete = null }) { Text("ביטול") } },
+        )
+    }
     // בוחר הקבצים של אנדרואיד. מחזיר כתובת (Uri) של הקובץ שנבחר, או null אם ביטלת.
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { vm.loadImportFile(it) }
@@ -189,6 +212,19 @@ fun SettingsScreen(vm: MainViewModel, padding: PaddingValues, onManageCategories
                         onConfirm = { vm.confirmImport(s.rows) },
                         onCancel = { vm.cancelImport() },
                     )
+                }
+                // מה שכבר יובא, לפי אמצעי תשלום, עם אפשרות למחוק ייבוא שלם
+                if (importBatches.isNotEmpty()) {
+                    Text("נתונים שיובאו", color = K.Muted, modifier = Modifier.padding(top = 6.dp))
+                    importBatches.forEach { b ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(b.account.ifBlank { "ללא אמצעי תשלום" }, color = K.Text)
+                                Text("${b.count} תנועות", color = K.Muted, fontSize = 13.sp)
+                            }
+                            TextButton(onClick = { batchToDelete = b }) { Text("מחק", color = K.Expense) }
+                        }
+                    }
                 }
             }
         }

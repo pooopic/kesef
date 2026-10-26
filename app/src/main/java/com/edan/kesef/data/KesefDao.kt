@@ -61,6 +61,22 @@ interface KesefDao {
     @Query("DELETE FROM entries WHERE id = :id")
     suspend fun deleteEntry(id: Long)
 
+    // ---------- ייבוא ----------
+
+    /** סיכום של מה שיובא, לפי אמצעי תשלום. כך אפשר למחוק ייבוא שלם בבת אחת. */
+    @Query(
+        "SELECT account, COUNT(*) AS count, SUM(amount) AS total FROM entries " +
+            "WHERE source = 'IMPORT' GROUP BY account ORDER BY account",
+    )
+    fun importBatches(): Flow<List<ImportBatch>>
+
+    @Query("DELETE FROM entries WHERE source = 'IMPORT' AND account = :account")
+    suspend fun deleteImported(account: String): Int
+
+    /** קטגוריות שהוספו (לא מובנות) ואין בהן אף תנועה */
+    @Query("DELETE FROM categories WHERE builtIn = 0 AND id NOT IN (SELECT DISTINCT categoryId FROM entries)")
+    suspend fun deleteEmptyCustomCategories(): Int
+
     // ---------- חוקי בתי עסק ----------
 
     @Query("SELECT categoryId FROM merchant_rules WHERE merchant = :merchant")

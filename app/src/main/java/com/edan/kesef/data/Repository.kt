@@ -20,6 +20,19 @@ class Repository(private val context: Context, private val db: AppDatabase) {
 
     private val dao: KesefDao = db.dao()
 
+    val importBatches: Flow<List<ImportBatch>> = dao.importBatches()
+
+    /**
+     * מוחק את כל מה שיובא מאמצעי תשלום מסוים (למשל קובץ שיובא בטעות).
+     * תנועות שהוזנו ידנית או נקלטו מ-Wallet לא נפגעות.
+     * אחר כך מוחקים קטגוריות שהוספו ונשארו ריקות.
+     */
+    suspend fun deleteImported(account: String): Int = db.withTransaction {
+        val deleted = dao.deleteImported(account)
+        dao.deleteEmptyCustomCategories()
+        deleted
+    }
+
     data class ImportSummary(val added: Int, val skipped: Int, val newCategories: List<String>)
 
     /**

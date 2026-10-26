@@ -58,6 +58,9 @@ data class MerchantRule(
     val categoryId: Long,
 )
 
+/** לא טבלה: תוצאה של שאילתת סיכום (כמה תנועות יובאו מכל אמצעי תשלום) */
+data class ImportBatch(val account: String, val count: Int, val total: Long)
+
 /** יומן של כל התראה שהגיעה מ-Wallet, כדי לראות מה נקלט ומה לא (ולתקן את הפענוח). */
 @Entity(tableName = "wallet_log")
 data class WalletLog(

@@ -128,6 +128,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         importState.value = ImportState.Done(s.added, s.skipped)
     }
 
+    val importBatches = repo.importBatches.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun deleteImported(account: String) = viewModelScope.launch { repo.deleteImported(account) }
+
     fun cancelImport() {
         importState.value = ImportState.Idle
     }
