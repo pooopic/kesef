@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ערכת הנושא של החלון עצמו (לפני ש-Compose מצייר). כהה כדי שלא יהיה הבזק לבן בפתיחה. -->
+    <style name="Theme.Kesef" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <color name="bg">#0F1226</color>
+    <color name="launcher_bg">#1B1F3B</color>
+</resources>

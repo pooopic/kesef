@@ -1,0 +1,13 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+.kotlin/
+
+# מפתח החתימה לעולם לא נכנס ל-git. הוא שמור כ-Secret ב-GitHub ובגיבוי אצלך.
+*.p12
+*.jks
+*.keystore

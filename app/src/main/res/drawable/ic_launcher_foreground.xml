@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- אייקון: טבעת יתרה (כמו במסך הראשי) עם נקודה בקצה -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- מסלול הטבעת -->
+    <path
+        android:pathData="M54,30 A24,24 0 1,1 53.99,30"
+        android:strokeWidth="7"
+        android:strokeColor="#2E3458"
+        android:fillColor="#00000000" />
+    <!-- החלק המלא: שלושה רבעים -->
+    <path
+        android:pathData="M54,30 A24,24 0 1,1 30,54"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeColor="#34D399"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M54,46 A8,8 0 1,1 53.99,46 Z"
+        android:fillColor="#A78BFA" />
+</vector>
