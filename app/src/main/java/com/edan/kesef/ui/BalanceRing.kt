@@ -28,22 +28,22 @@ import kotlin.math.roundToInt
 /**
  * העיגול הגדול של המסך הראשי.
  *
- * הטבעת מראה "כמה נשאר" מההכנסות של החודש: בתחילת החודש היא מלאה,
- * וכל הוצאה "אוכלת" ממנה. אם הוצאת יותר ממה שנכנס, הטבעת ריקה והיתרה באדום.
+ * במרכז: היתרה בחשבון. היא מצטברת מכל הזמנים: יתרת פתיחה + כל ההכנסות − כל ההוצאות.
+ * הטבעת: כמה נשאר מההכנסות של החודש הנוכחי. בתחילת החודש היא מלאה,
+ * וכל הוצאה "אוכלת" ממנה. הוצאת יותר ממה שנכנס החודש? הטבעת ריקה.
  */
 @Composable
-fun BalanceRing(income: Long, expenses: Long, modifier: Modifier = Modifier) {
-    val balance = income - expenses
+fun BalanceRing(balance: Long, monthIncome: Long, monthExpenses: Long, modifier: Modifier = Modifier) {
     val spentRatio = when {
-        income > 0 -> (expenses.toFloat() / income).coerceIn(0f, 1f)
-        expenses > 0 -> 1f
+        monthIncome > 0 -> (monthExpenses.toFloat() / monthIncome).coerceIn(0f, 1f)
+        monthExpenses > 0 -> 1f
         else -> 0f
     }
     // אנימציה: הטבעת "מתמלאת/מתרוקנת" בעדינות כשהמספרים משתנים
     val remaining by animateFloatAsState(1f - spentRatio, tween(900), label = "ring")
-    val overspent = balance < 0
+    val negative = balance < 0
 
-    Box(modifier.size(270.dp), contentAlignment = Alignment.Center) {
+    Box(modifier.size(280.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val stroke = 22.dp.toPx()
             val topLeft = Offset(stroke / 2, stroke / 2)
@@ -52,7 +52,7 @@ fun BalanceRing(income: Long, expenses: Long, modifier: Modifier = Modifier) {
             // הילה רכה מאחורי העיגול
             drawCircle(
                 Brush.radialGradient(
-                    listOf((if (overspent) K.Expense else K.Accent).copy(alpha = 0.22f), Color.Transparent),
+                    listOf((if (negative) K.Expense else K.Accent).copy(alpha = 0.22f), Color.Transparent),
                     center = center,
                     radius = size.minDimension / 2,
                 ),
@@ -73,17 +73,19 @@ fun BalanceRing(income: Long, expenses: Long, modifier: Modifier = Modifier) {
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("יתרה החודש", color = K.Muted, fontSize = 15.sp)
+            Text("יתרה בחשבון", color = K.Muted, fontSize = 15.sp)
             Text(
                 Money.display(balance),
-                color = if (overspent) K.Expense else K.Text,
-                fontSize = 44.sp,
+                color = if (negative) K.Expense else K.Text,
+                fontSize = if (Money.format(balance).length > 9) 36.sp else 44.sp,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                if (income > 0) "נוצלו ${(spentRatio * 100).roundToInt()}% מההכנסות"
-                else if (expenses > 0) "אין הכנסות רשומות החודש"
-                else "עוד לא נרשמו תנועות",
+                when {
+                    monthIncome > 0 -> "החודש נוצלו ${(spentRatio * 100).roundToInt()}% מההכנסות"
+                    monthExpenses > 0 -> "אין הכנסות רשומות החודש"
+                    else -> "אין תנועות החודש"
+                },
                 color = K.Muted,
                 fontSize = 13.sp,
             )

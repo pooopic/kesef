@@ -24,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import java.time.YearMonth
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,7 +40,19 @@ fun HomeScreen(vm: MainViewModel, padding: PaddingValues, onOpenEntry: (Long) ->
     val categories by vm.categories.collectAsStateWithLifecycle()
     val update by vm.update.collectAsStateWithLifecycle()
 
+    val all by vm.allEntries.collectAsStateWithLifecycle()
+    val opening by vm.openingBalance.collectAsStateWithLifecycle()
+
     val catById = remember(categories) { categories.associateBy { it.id } }
+    // מצטבר מכל הזמנים
+    val totalIncome = remember(all) { all.filter { it.type == EntryType.INCOME }.sumOf { it.amount } }
+    val totalExpenses = remember(all) { all.filter { it.type == EntryType.EXPENSE }.sumOf { it.amount } }
+    // החודש הנוכחי (בשביל הטבעת), בלי קשר לחודש שבחרת ברשימה
+    val thisMonth = remember(all) {
+        val now = YearMonth.now()
+        all.filter { YearMonth.from(it.localDate()) == now }
+    }
+    // החודש שנבחר ברשימת התנועות
     val income = remember(entries) { entries.filter { it.type == EntryType.INCOME }.sumOf { it.amount } }
     val expenses = remember(entries) { entries.filter { it.type == EntryType.EXPENSE }.sumOf { it.amount } }
 
@@ -50,18 +64,20 @@ fun HomeScreen(vm: MainViewModel, padding: PaddingValues, onOpenEntry: (Long) ->
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item { MonthSwitcher(month, vm::shiftMonth) }
-
         item {
-            Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                BalanceRing(income, expenses)
+            Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp), contentAlignment = Alignment.Center) {
+                BalanceRing(
+                    balance = opening + totalIncome - totalExpenses,
+                    monthIncome = thisMonth.filter { it.type == EntryType.INCOME }.sumOf { it.amount },
+                    monthExpenses = thisMonth.filter { it.type == EntryType.EXPENSE }.sumOf { it.amount },
+                )
             }
         }
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatPill("הכנסות", income, K.Income, Modifier.weight(1f))
-                StatPill("הוצאות", expenses, K.Expense, Modifier.weight(1f))
+                StatPill("הכנסות מצטברות", totalIncome, K.Income, Modifier.weight(1f))
+                StatPill("הוצאות מצטברות", totalExpenses, K.Expense, Modifier.weight(1f))
             }
         }
 
@@ -72,11 +88,16 @@ fun HomeScreen(vm: MainViewModel, padding: PaddingValues, onOpenEntry: (Long) ->
             item { UpdateBanner("מוריד… ${(d.progress * 100).toInt()}%") {} }
         }
 
+        // ---------- תנועות לפי חודש ----------
+        item { Spacer(Modifier.size(10.dp)) }
+        item { MonthSwitcher(month, vm::shiftMonth) }
         item {
             Text(
-                "תנועות",
-                color = K.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
+                "הכנסות ${Money.display(income)} · הוצאות ${Money.display(expenses)} · " +
+                    "מאזן ${Money.display(income - expenses)}",
+                color = K.Muted, fontSize = 13.sp,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
             )
         }
 

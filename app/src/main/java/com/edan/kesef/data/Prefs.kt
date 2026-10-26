@@ -21,6 +21,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("capture_notify", true)
         set(v) = sp.edit { putBoolean("capture_notify", v) }
 
+    /** יתרת החשבון לפני התנועה הראשונה שרשומה באפליקציה, באגורות. ברירת מחדל 0. */
+    var openingBalance: Long
+        get() = sp.getLong("opening_balance", 0L)
+        set(v) = sp.edit { putLong("opening_balance", v) }
+
     /** כדי לא להציק עם התראת "יש עדכון" על אותה גרסה שוב ושוב */
     var lastUpdateNotified: Int
         get() = sp.getInt("last_update_notified", 0)

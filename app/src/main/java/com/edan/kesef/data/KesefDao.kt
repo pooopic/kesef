@@ -18,7 +18,7 @@ interface KesefDao {
 
     // ---------- קטגוריות ----------
 
-    @Query("SELECT * FROM categories ORDER BY type, builtIn DESC, id")
+    @Query("SELECT * FROM categories ORDER BY type, sort, id")
     fun categories(): Flow<List<Category>>
 
     @Query("SELECT * FROM categories")
@@ -41,6 +41,10 @@ interface KesefDao {
     suspend fun moveEntries(from: Long, to: Long)
 
     // ---------- תנועות ----------
+
+    /** כל התנועות מאז ומעולם, בשביל היתרה המצטברת והסיכומים */
+    @Query("SELECT * FROM entries ORDER BY timestamp DESC")
+    fun allEntries(): Flow<List<Entry>>
 
     @Query("SELECT * FROM entries WHERE timestamp >= :from AND timestamp < :to ORDER BY timestamp DESC")
     fun entriesBetween(from: Long, to: Long): Flow<List<Entry>>

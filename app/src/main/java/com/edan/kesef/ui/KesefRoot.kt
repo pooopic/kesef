@@ -37,7 +37,7 @@ import com.edan.kesef.data.EntryType
 import com.edan.kesef.ui.theme.K
 
 /** הלשוניות בסרגל התחתון */
-enum class Tab(val label: String) { HOME("בית"), STATS("פילוח"), SETTINGS("הגדרות") }
+enum class Tab(val label: String) { HOME("בית"), STATS("סיכומים"), SETTINGS("הגדרות") }
 
 /** מסכים שנפתחים "מעל" הלשוניות */
 sealed interface Overlay {

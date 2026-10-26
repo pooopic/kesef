@@ -48,6 +48,10 @@ val Hebrew: Locale = Locale.forLanguageTag("he")
 
 fun Category.uiColor() = Color(color)
 
+/** התאריך של תנועה, לפי אזור הזמן של הטלפון */
+fun Entry.localDate(): java.time.LocalDate =
+    Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+
 fun YearMonth.hebrewTitle(): String =
     "${month.getDisplayName(TextStyle.FULL_STANDALONE, Hebrew)} $year"
 

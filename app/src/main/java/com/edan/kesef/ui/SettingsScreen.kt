@@ -7,6 +7,9 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.edan.kesef.data.EntryType
 import com.edan.kesef.data.ImportBatch
 import com.edan.kesef.importer.CsvImport
@@ -69,6 +72,9 @@ fun SettingsScreen(vm: MainViewModel, padding: PaddingValues, onManageCategories
     var hour by remember { mutableIntStateOf(vm.prefs.reminderHour) }
     var captureNotify by remember { mutableStateOf(vm.prefs.captureNotify) }
     var showLog by remember { mutableStateOf(false) }
+
+    var openingText by remember { mutableStateOf(Money.toEditable(vm.openingBalance.value)) }
+    var openingSaved by remember { mutableStateOf(true) }
 
     val importState by vm.importState.collectAsStateWithLifecycle()
     val importBatches by vm.importBatches.collectAsStateWithLifecycle()
@@ -179,6 +185,31 @@ fun SettingsScreen(vm: MainViewModel, padding: PaddingValues, onManageCategories
                         Text("%02d:00".format(hour), color = K.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         TextButton(onClick = { hour = (hour + 1) % 24; vm.setReminder(true, hour) }) { Text("+", fontSize = 22.sp) }
                     }
+                }
+            }
+        }
+
+        // ---------- יתרת פתיחה ----------
+        item {
+            SectionCard("יתרת פתיחה בחשבון") {
+                Hint(
+                    "כמה כסף היה בחשבון לפני התנועה הראשונה שרשומה באפליקציה. " +
+                        "היתרה במסך הראשי = יתרת פתיחה + כל ההכנסות − כל ההוצאות.",
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = openingText,
+                        onValueChange = { openingText = it; openingSaved = false },
+                        modifier = Modifier.weight(1f),
+                        prefix = { Text("₪ ") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                    val parsed = Money.parse(openingText.ifBlank { "0" })
+                    TextButton(
+                        onClick = { parsed?.let { vm.setOpeningBalance(it); openingSaved = true } },
+                        enabled = parsed != null && !openingSaved,
+                    ) { Text(if (openingSaved) "נשמר ✓" else "שמור") }
                 }
             }
         }

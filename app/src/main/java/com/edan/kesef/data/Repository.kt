@@ -79,6 +79,7 @@ class Repository(private val context: Context, private val db: AppDatabase) {
     val prefs = Prefs(context)
     val categories: Flow<List<Category>> = dao.categories()
     val walletLog: Flow<List<WalletLog>> = dao.recentLogs()
+    val allEntries: Flow<List<Entry>> = dao.allEntries()
 
     private val zone: ZoneId get() = ZoneId.systemDefault()
 

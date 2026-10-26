@@ -20,6 +20,8 @@ data class Category(
     val type: EntryType,
     /** קטגוריות מובנות לא נמחקות, כי הסיווג האוטומטי נשען עליהן. */
     val builtIn: Boolean = false,
+    /** סדר התצוגה. קטגוריות שתוסיף (999) יופיעו אחרי המובנות. */
+    @ColumnInfo(defaultValue = "999") val sort: Int = 999,
 )
 
 /** תנועה אחת: הוצאה או הכנסה. */

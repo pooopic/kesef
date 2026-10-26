@@ -64,6 +64,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         .flatMapLatest { repo.entriesForMonth(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /** כל התנועות בכל הזמנים: היתרה בחשבון והסיכומים מחושבים מהן */
+    val allEntries: StateFlow<List<Entry>> =
+        repo.allEntries.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _openingBalance = MutableStateFlow(repo.prefs.openingBalance)
+    val openingBalance: StateFlow<Long> = _openingBalance
+
+    fun setOpeningBalance(agorot: Long) {
+        prefs.openingBalance = agorot
+        _openingBalance.value = agorot
+    }
+
     val walletLog = repo.walletLog.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun shiftMonth(delta: Long) {
