@@ -25,7 +25,8 @@ import com.edan.kesef.util.Money
 object Notifications {
     private const val CH_CAPTURED = "captured"
     private const val CH_REMINDERS = "reminders"
-    private const val CH_UPDATES = "updates"
+    // "updates_v2": לערוץ קיים אי אפשר לשנות חשיבות, אז יצרנו ערוץ חדש במקום הישן (שהיה שקט מדי)
+    private const val CH_UPDATES = "updates_v2"
 
     private const val ID_REMINDER = 1
     private const val ID_UPDATE = 2
@@ -34,13 +35,14 @@ object Notifications {
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
+        nm.deleteNotificationChannel("updates") // הערוץ הישן
         nm.createNotificationChannels(
             listOf(
                 NotificationChannel(CH_CAPTURED, "תשלומים שנקלטו", NotificationManager.IMPORTANCE_DEFAULT)
                     .apply { description = "הודעה כשתשלום מ-Google Wallet נרשם אוטומטית" },
                 NotificationChannel(CH_REMINDERS, "תזכורות", NotificationManager.IMPORTANCE_DEFAULT)
                     .apply { description = "תזכורת יומית לעבור על ההוצאות" },
-                NotificationChannel(CH_UPDATES, "עדכוני גרסה", NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(CH_UPDATES, "עדכוני גרסה", NotificationManager.IMPORTANCE_DEFAULT),
             ),
         )
     }

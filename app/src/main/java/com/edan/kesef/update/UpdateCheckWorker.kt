@@ -12,7 +12,11 @@ import com.edan.kesef.data.Prefs
 import com.edan.kesef.notify.Notifications
 import java.util.concurrent.TimeUnit
 
-/** בודק עדכונים ברקע פעמיים ביום, ושולח התראה אם יצאה גרסה חדשה. */
+/**
+ * בודק עדכונים ברקע כל 15 דקות (המינימום ש-WorkManager מאפשר), ושולח התראה אם יצאה גרסה חדשה.
+ * למה לא "פוש" אמיתי? פוש דורש שרת שישלח אותו, ולאפליקציה אין שרת. בדיקה קצרה מול GitHub זה הכי קרוב.
+ * אנדרואיד יכול לדחות את הבדיקה כשהטלפון במצב חיסכון בסוללה.
+ */
 class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -27,11 +31,12 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
 
     companion object {
         fun schedule(context: Context) {
-            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(12, TimeUnit.HOURS)
+            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(15, TimeUnit.MINUTES)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
+            // UPDATE: אם כבר מתוזמנת בדיקה (למשל מגרסה ישנה עם 12 שעות), מעדכנים אותה לתדירות החדשה
             WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork("update_check", ExistingPeriodicWorkPolicy.KEEP, request)
+                .enqueueUniquePeriodicWork("update_check", ExistingPeriodicWorkPolicy.UPDATE, request)
         }
     }
 }
