@@ -4,6 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.edan.kesef.data.EntryType
+import com.edan.kesef.importer.CsvImport
+import com.edan.kesef.util.Money
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -62,6 +67,12 @@ fun SettingsScreen(vm: MainViewModel, padding: PaddingValues, onManageCategories
     var hour by remember { mutableIntStateOf(vm.prefs.reminderHour) }
     var captureNotify by remember { mutableStateOf(vm.prefs.captureNotify) }
     var showLog by remember { mutableStateOf(false) }
+
+    val importState by vm.importState.collectAsStateWithLifecycle()
+    // בוחר הקבצים של אנדרואיד. מחזיר כתובת (Uri) של הקובץ שנבחר, או null אם ביטלת.
+    val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { vm.loadImportFile(it) }
+    }
 
     LazyColumn(
         contentPadding = PaddingValues(
@@ -149,6 +160,39 @@ fun SettingsScreen(vm: MainViewModel, padding: PaddingValues, onManageCategories
             }
         }
 
+        // ---------- ייבוא ----------
+        item {
+            SectionCard("ייבוא נתונים מקובץ") {
+                Hint(
+                    "קובץ CSV (באקסל: שמירה בשם ← CSV UTF-8) שהשורה הראשונה שלו היא:\n" +
+                        CsvImport.HEADER.joinToString(",") +
+                        "\nחובה: תאריך, סכום, קטגוריה. ההסבר המלא: docs/IMPORT_FORMAT.md ב-GitHub.",
+                )
+                when (val s = importState) {
+                    ImportState.Idle -> PrimaryButton("בחר קובץ") { pickFile.launch(arrayOf("*/*")) }
+                    ImportState.Importing -> Text("מייבא…", color = K.Muted)
+                    is ImportState.Failed -> {
+                        Text(s.message, color = K.Expense)
+                        PrimaryButton("בחר קובץ אחר") { pickFile.launch(arrayOf("*/*")) }
+                    }
+                    is ImportState.Done -> {
+                        Text(
+                            "✅ נוספו ${s.added} תנועות" + if (s.skipped > 0) " (${s.skipped} כבר היו קיימות)" else "",
+                            color = K.Income, fontWeight = FontWeight.SemiBold,
+                        )
+                        OutlinedButton(onClick = { vm.cancelImport() }, modifier = Modifier.fillMaxWidth()) {
+                            Text("סגור")
+                        }
+                    }
+                    is ImportState.Preview -> ImportPreview(
+                        s,
+                        onConfirm = { vm.confirmImport(s.rows) },
+                        onCancel = { vm.cancelImport() },
+                    )
+                }
+            }
+        }
+
         // ---------- קטגוריות ----------
         item {
             SectionCard("קטגוריות") {
@@ -185,6 +229,44 @@ fun SettingsScreen(vm: MainViewModel, padding: PaddingValues, onManageCategories
                 }
             }
         }
+    }
+}
+
+/** סיכום של מה שעומד להיכנס, לפני שמאשרים */
+@Composable
+private fun ImportPreview(p: ImportState.Preview, onConfirm: () -> Unit, onCancel: () -> Unit) {
+    val expenses = p.rows.filter { it.type == EntryType.EXPENSE }
+    val income = p.rows.filter { it.type == EntryType.INCOME }
+    val dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    Text("נמצאו ${p.rows.size} תנועות", color = K.Text, fontWeight = FontWeight.Bold)
+    if (p.rows.isNotEmpty()) {
+        Text(
+            "מ-${p.rows.minOf { it.date }.format(dateFmt)} עד ${p.rows.maxOf { it.date }.format(dateFmt)}\n" +
+                "${expenses.size} הוצאות: ${Money.display(expenses.sumOf { it.amountAgorot })}\n" +
+                "${income.size} הכנסות: ${Money.display(income.sumOf { it.amountAgorot })}",
+            color = K.Muted, fontSize = 14.sp,
+        )
+        val accounts = p.rows.map { it.account }.filter { it.isNotBlank() }.distinct()
+        if (accounts.isNotEmpty()) Text("אמצעי תשלום: ${accounts.joinToString()}", color = K.Muted, fontSize = 14.sp)
+    }
+    if (p.newCategories.isNotEmpty()) {
+        Text("קטגוריות חדשות שייווצרו: ${p.newCategories.joinToString()}", color = K.Accent, fontSize = 14.sp)
+    }
+    if (p.errors.isNotEmpty()) {
+        Text(
+            "${p.errors.size} שורות עם בעיה (לא ייובאו):\n" + p.errors.take(5).joinToString("\n") +
+                if (p.errors.size > 5) "\n…" else "",
+            color = K.Expense, fontSize = 13.sp,
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("ביטול") }
+        Button(
+            onClick = onConfirm,
+            enabled = p.rows.isNotEmpty(),
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = K.Income, contentColor = Color(0xFF052E1C)),
+        ) { Text("ייבא", fontWeight = FontWeight.Bold) }
     }
 }
 

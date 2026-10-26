@@ -18,7 +18,7 @@ class KesefApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        repo = Repository(this, AppDatabase.get(this).dao())
+        repo = Repository(this, AppDatabase.get(this))
         Notifications.createChannels(this)
         ReminderWorker.schedule(this, replace = false)
         UpdateCheckWorker.schedule(this)

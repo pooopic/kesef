@@ -11,3 +11,10 @@ captures/
 *.p12
 *.jks
 *.keystore
+
+# נתונים כספיים אישיים לעולם לא נכנסים ל-git (ה-repo ציבורי!).
+# רק קובץ הדוגמה בתיקיית docs מותר.
+*.xlsx
+*.xls
+*.csv
+!docs/import-example.csv

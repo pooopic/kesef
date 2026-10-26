@@ -1,6 +1,10 @@
 package com.edan.kesef.ui
 
 import android.app.Application
+import android.net.Uri
+import com.edan.kesef.importer.CsvImport
+import com.edan.kesef.importer.ImportRow
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.edan.kesef.KesefApp
@@ -28,6 +32,15 @@ sealed interface UpdateState {
     data class Available(val info: ReleaseInfo) : UpdateState
     data class Downloading(val progress: Float) : UpdateState
     data class Error(val message: String) : UpdateState
+}
+
+/** מצב הייבוא מקובץ */
+sealed interface ImportState {
+    data object Idle : ImportState
+    data class Preview(val rows: List<ImportRow>, val errors: List<String>, val newCategories: List<String>) : ImportState
+    data object Importing : ImportState
+    data class Done(val added: Int, val skipped: Int) : ImportState
+    data class Failed(val message: String) : ImportState
 }
 
 /**
@@ -79,6 +92,44 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         prefs.reminderEnabled = enabled
         prefs.reminderHour = hour.coerceIn(0, 23)
         ReminderWorker.schedule(getApplication(), replace = true)
+    }
+
+    // ---------- ייבוא מקובץ ----------
+
+    val importState = MutableStateFlow<ImportState>(ImportState.Idle)
+
+    /** שלב 1: קוראים ובודקים את הקובץ, ומציגים תצוגה מקדימה. עדיין לא נשמר כלום. */
+    fun loadImportFile(uri: Uri) = viewModelScope.launch {
+        val ctx = getApplication<Application>()
+        val parsed = withContext(Dispatchers.IO) {
+            try {
+                val bytes = ctx.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: return@withContext null
+                CsvImport.parse(CsvImport.decode(bytes))
+            } catch (e: Exception) {
+                null
+            }
+        }
+        if (parsed == null) {
+            importState.value = ImportState.Failed("לא הצלחתי לקרוא את הקובץ")
+            return@launch
+        }
+        val existing = categories.value.map { it.type to it.name.trim() }.toSet()
+        val newCategories = parsed.rows.map { it.type to it.category }.distinct()
+            .filter { it !in existing }
+            .map { it.second }
+        importState.value = ImportState.Preview(parsed.rows, parsed.errors, newCategories)
+    }
+
+    /** שלב 2: המשתמש אישר. שומרים. */
+    fun confirmImport(rows: List<ImportRow>) = viewModelScope.launch {
+        importState.value = ImportState.Importing
+        val s = repo.importRows(rows)
+        importState.value = ImportState.Done(s.added, s.skipped)
+    }
+
+    fun cancelImport() {
+        importState.value = ImportState.Idle
     }
 
     // ---------- עדכונים ----------

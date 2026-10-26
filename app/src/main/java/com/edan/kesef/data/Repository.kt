@@ -1,6 +1,8 @@
 package com.edan.kesef.data
 
 import android.content.Context
+import androidx.room.withTransaction
+import com.edan.kesef.importer.ImportRow
 import com.edan.kesef.notify.Notifications
 import com.edan.kesef.wallet.AutoCategorizer
 import com.edan.kesef.wallet.WalletParser
@@ -14,7 +16,52 @@ import java.time.ZoneId
  * איך מסווגים תשלום, מה קורה כשמוחקים קטגוריה וכו'.
  * המסכים לא מדברים עם ה-DAO ישירות, רק עם המחלקה הזו.
  */
-class Repository(private val context: Context, private val dao: KesefDao) {
+class Repository(private val context: Context, private val db: AppDatabase) {
+
+    private val dao: KesefDao = db.dao()
+
+    data class ImportSummary(val added: Int, val skipped: Int, val newCategories: List<String>)
+
+    /**
+     * מכניס שורות מקובץ ייבוא. קטגוריה שלא קיימת נוצרת אוטומטית.
+     * ייבוא חוזר של אותו קובץ לא יוצר כפילויות: לכל שורה יש externalId קבוע.
+     */
+    suspend fun importRows(rows: List<ImportRow>): ImportSummary = db.withTransaction {
+        val categories = dao.categoriesOnce().toMutableList()
+        val newCategories = mutableListOf<String>()
+        val seen = HashMap<String, Int>()
+        var added = 0
+        var skipped = 0
+        for (r in rows) {
+            val category = categories.firstOrNull { it.type == r.type && it.name.trim() == r.category }
+                ?: Category(
+                    name = r.category,
+                    emoji = DefaultCategories.emojiFor(r.category),
+                    color = DefaultCategories.palette[newCategories.size % DefaultCategories.palette.size],
+                    type = r.type,
+                ).let { c -> c.copy(id = dao.insertCategory(c)) }
+                    .also { categories += it; newCategories += it.name }
+            // שתי שורות זהות לגמרי באותו קובץ (למשל שני קפה באותו יום) מקבלות מספר רץ
+            val key = "import|${r.date}|${r.amountAgorot}|${r.type}|${r.description}|${r.account}"
+            val n = (seen[key] ?: 0) + 1
+            seen[key] = n
+            val id = dao.insertEntry(
+                Entry(
+                    amount = r.amountAgorot,
+                    type = r.type,
+                    categoryId = category.id,
+                    note = r.note,
+                    merchant = r.description,
+                    timestamp = r.date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli(),
+                    source = EntrySource.IMPORT,
+                    externalId = "$key|$n",
+                    account = r.account,
+                ),
+            )
+            if (id == -1L) skipped++ else added++
+        }
+        ImportSummary(added, skipped, newCategories)
+    }
 
     val prefs = Prefs(context)
     val categories: Flow<List<Category>> = dao.categories()
@@ -105,6 +152,7 @@ class Repository(private val context: Context, private val dao: KesefDao) {
             note = if (parsed.currency != "ILS") "סכום ב-${parsed.currency}" else "",
             timestamp = postTime,
             source = EntrySource.WALLET,
+            account = "Google Wallet",
             // אותה התראה באותה דקה = אותו תשלום. מונע כפילויות כש-Wallet מעדכן התראה.
             externalId = "${postTime / 60_000}|$title|$text",
         )

@@ -21,6 +21,9 @@ interface KesefDao {
     @Query("SELECT * FROM categories ORDER BY type, builtIn DESC, id")
     fun categories(): Flow<List<Category>>
 
+    @Query("SELECT * FROM categories")
+    suspend fun categoriesOnce(): List<Category>
+
     @Query("SELECT EXISTS(SELECT 1 FROM categories WHERE id = :id)")
     suspend fun categoryExists(id: Long): Boolean
 

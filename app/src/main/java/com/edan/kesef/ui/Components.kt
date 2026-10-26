@@ -138,7 +138,11 @@ fun EntryRow(entry: Entry, category: Category?, onClick: () -> Unit) {
         append(category?.name ?: "")
         append(" · ")
         append(time)
-        if (entry.source == EntrySource.WALLET) append(" · Wallet")
+        // אמצעי התשלום (ויזה 3447 / בנק / Wallet), כדי להבחין בין המקורות
+        when {
+            entry.account.isNotBlank() -> append(" · ${entry.account}")
+            entry.source == EntrySource.WALLET -> append(" · Wallet")
+        }
     }
     val isIncome = entry.type == EntryType.INCOME
     Row(

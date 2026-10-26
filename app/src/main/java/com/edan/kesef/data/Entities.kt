@@ -1,13 +1,14 @@
 package com.edan.kesef.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
 enum class EntryType { EXPENSE, INCOME }
 
-/** מאיפה הגיעה התנועה: הוזנה ידנית, או נקלטה מהתראה של Google Wallet. */
-enum class EntrySource { MANUAL, WALLET }
+/** מאיפה הגיעה התנועה: הוזנה ידנית, נקלטה מהתראה של Google Wallet, או יובאה מקובץ. */
+enum class EntrySource { MANUAL, WALLET, IMPORT }
 
 @Entity(tableName = "categories")
 data class Category(
@@ -43,6 +44,8 @@ data class Entry(
     val timestamp: Long,
     val source: EntrySource = EntrySource.MANUAL,
     val externalId: String? = null,
+    /** אמצעי התשלום: "ויזה 3447", "בנק", "מזומן"... כדי להבחין בין כמה כרטיסים וחשבון הבנק. */
+    @ColumnInfo(defaultValue = "") val account: String = "",
 )
 
 /**

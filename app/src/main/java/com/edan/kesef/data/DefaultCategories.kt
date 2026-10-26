@@ -45,6 +45,16 @@ object DefaultCategories {
         Category(CatIds.OTHER_INCOME, "אחר", "➕", 0xFF94A3B8, EntryType.INCOME, true),
     )
 
+    /** אימוג'י לקטגוריה שנוצרת בייבוא, לפי מילה בשם שלה. ברירת מחדל: 🏷️ */
+    fun emojiFor(name: String): String {
+        val hints = listOf(
+            "ספורט" to "⚽", "רכב" to "🔧", "ביגוד" to "👕", "אופנה" to "👕", "העברות" to "💸",
+            "מנוי" to "🔁", "ביטוח" to "🧾", "מיסים" to "🧾", "תרומ" to "💝", "בית" to "🛋️",
+            "אלקטרוניקה" to "💻", "משכורת" to "💼", "החזר" to "↩️", "חיסכון" to "🐷",
+        )
+        return hints.firstOrNull { (word, _) -> name.contains(word) }?.second ?: "🏷️"
+    }
+
     /** צבעים לבחירה כשמוסיפים קטגוריה חדשה */
     val palette = listOf(
         0xFF34D399, 0xFFFBBF24, 0xFF60A5FA, 0xFFA78BFA, 0xFFF472B6,
